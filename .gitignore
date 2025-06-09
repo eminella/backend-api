@@ -1,2 +1,6 @@
-node_modules/
+# uploads klasörünü tamamen dışlama
 # uploads/
+
+# uploads klasöründeki .keep dosyasını içeri al
+!uploads/
+!uploads/.keep

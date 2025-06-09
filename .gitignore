@@ -1,2 +1,1 @@
-# .gitignore dosyasına şunu yaz
-/uploads
+node_modules/

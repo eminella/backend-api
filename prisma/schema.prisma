@@ -11,5 +11,17 @@ model Product {
   id        Int      @id @default(autoincrement())
   name      String
   price     Float
+  imageUrl  String?   // Resim URL'si, opsiyonel
   createdAt DateTime @default(now())
+}
+
+model Order {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  status      String   @default("Hazırlanıyor")
+  totalAmount Float
+  items       Json
+  customerName String?   // Müşteri adı
+  address     String?    // Teslimat adresi
+  phone       String?    // Telefon numarası
 }

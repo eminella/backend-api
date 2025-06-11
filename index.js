@@ -1,50 +1,37 @@
 const express = require('express');
 const cors = require('cors');
-const multer = require('multer');
-const path = require('path');
 const { PrismaClient } = require('@prisma/client');
+const upload = require('./middleware/upload');
 
 const app = express();
 const prisma = new PrismaClient();
-const PORT = process.env.PORT || 3500;
+const PORT = process.env.PORT || 3600;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Multer Ayarları
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, 'uploads'));
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = `${Date.now()}-${Math.floor(Math.random() * 10000)}${path.extname(file.originalname)}`;
-    cb(null, uniqueName);
-  },
-});
-const upload = multer({ storage });
 
 /* 📦 Ürün Listele */
 app.get('/products', async (req, res) => {
-  const products = await prisma.product.findMany();
-  res.json(products);
+  try {
+    const products = await prisma.product.findMany();
+    res.json(products);
+  } catch (error) {
+    console.error('Ürün listeleme hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası' });
+  }
 });
 
-/* ➕ Ürün Ekle (FormData ve Resimli) */
-app.post('/products', upload.single("image"), async (req, res) => {
-  console.log("🎯 Gelen form:", req.body);
-  console.log("📸 Gelen dosya:", req.file);
-
+/* ➕ Ürün Ekle (Cloudinary + FormData) */
+app.post('/products', upload.single('image'), async (req, res) => {
   try {
     const { name, price } = req.body;
     const parsedPrice = parseFloat(price);
-    const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
     if (!name || isNaN(parsedPrice)) {
-      console.log("❌ Geçersiz veri:", { name, price });
       return res.status(400).json({ error: 'Geçersiz isim veya fiyat' });
     }
+
+    const imageUrl = req.file?.path || null;
 
     const product = await prisma.product.create({
       data: {
@@ -56,8 +43,8 @@ app.post('/products', upload.single("image"), async (req, res) => {
 
     res.status(201).json(product);
   } catch (error) {
-    console.error("❌ Sunucu hatası:", error);
-    res.status(500).json({ error: "Sunucu hatası" });
+    console.error('Ürün ekleme hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası' });
   }
 });
 
@@ -68,15 +55,20 @@ app.delete('/products/:id', async (req, res) => {
     await prisma.product.delete({ where: { id } });
     res.status(200).json({ message: 'Ürün silindi' });
   } catch (error) {
-    console.error("❌ Silme hatası:", error);
+    console.error('Ürün silme hatası:', error);
     res.status(500).json({ error: 'Silme hatası' });
   }
 });
 
 /* 🛒 Sipariş Listele */
 app.get('/orders', async (req, res) => {
-  const orders = await prisma.order.findMany();
-  res.json(orders);
+  try {
+    const orders = await prisma.order.findMany();
+    res.json(orders);
+  } catch (error) {
+    console.error('Sipariş listeleme hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası' });
+  }
 });
 
 /* ➕ Yeni Sipariş Oluştur */
@@ -127,6 +119,7 @@ app.get('/orders/:id', async (req, res) => {
     if (!order) return res.status(404).json({ error: 'Sipariş bulunamadı' });
     res.json(order);
   } catch (error) {
+    console.error('Sipariş detay hatası:', error);
     res.status(500).json({ error: 'Sunucu hatası' });
   }
 });

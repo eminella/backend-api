@@ -8,10 +8,13 @@ app.post('/products', upload.single('image'), async (req, res) => {
     }
 
     if (!req.file || !req.file.path) {
+      console.error("❌ Dosya yüklenemedi veya req.file.path boş");
       return res.status(400).json({ error: 'Görsel yüklenemedi' });
     }
 
-    const imageUrl = req.file.path; // ✅ Cloudinary URL burada zaten
+    console.log("✅ Dosya Yüklendi:", req.file);
+
+    const imageUrl = req.file.path;
 
     const product = await prisma.product.create({
       data: {
@@ -23,7 +26,8 @@ app.post('/products', upload.single('image'), async (req, res) => {
 
     res.status(201).json(product);
   } catch (error) {
-    console.error("❌ ÜRÜN EKLEME HATASI:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    console.error("❌ ÜRÜN EKLEME HATASI:");
+    console.error(error); // ← Objenin tamamı
     res.status(500).json({ error: 'Ürün eklenemedi.' });
   }
 });

@@ -1,9 +1,10 @@
+require('dotenv').config();
 const cloudinary = require('cloudinary').v2;
 
 cloudinary.config({
-  cloud_name: 'dv3evvpqx',                      // Cloudinary'deki Cloud Name
-  api_key: '189542693115367',                   // Cloudinary API Key
-  api_secret: '6yjc3IPaZr2L0-V1pYrF1oGS9XU',     // Cloudinary API Secret
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dv3evvpqx',
+  api_key: process.env.CLOUDINARY_API_KEY || '189542693115367',
+  api_secret: process.env.CLOUDINARY_API_SECRET || '6yjc3IPaZr2L0-V1pYrF1oGS9XU',
 });
 
 module.exports = cloudinary;

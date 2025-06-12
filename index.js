@@ -11,15 +11,35 @@ app.use(cors());
 app.use(express.json());
 
 /* 📦 Ürün Listele */
-app.get('/products', async (req, res) => {
+app.post('/products', upload.single('image'), async (req, res) => {
   try {
-    const products = await prisma.product.findMany();
-    res.json(products);
+    console.log('BODY:', JSON.stringify(req.body, null, 2));
+    console.log('FILE:', req.file);
+
+    const { name, price } = req.body;
+    const parsedPrice = parseFloat(price);
+
+    if (!name || isNaN(parsedPrice)) {
+      return res.status(400).json({ error: 'Geçersiz isim veya fiyat' });
+    }
+
+    const imageUrl = req.file?.path || null;
+
+    const product = await prisma.product.create({
+      data: {
+        name,
+        price: parsedPrice,
+        imageUrl,
+      },
+    });
+
+    res.status(201).json(product);
   } catch (error) {
-    console.error('Ürün listeleme hatası:', error);
+    console.error('Ürün ekleme hatası:', error); // 👈 Hangi hata geliyor göreceğiz
     res.status(500).json({ error: 'Sunucu hatası' });
   }
 });
+
 
 /* ➕ Ürün Ekle (Cloudinary + FormData) */
 app.post('/products', upload.single('image'), async (req, res) => {

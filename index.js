@@ -21,7 +21,11 @@ app.post('/products', upload.single('image'), async (req, res) => {
 
     if (!name || isNaN(parsedPrice)) {
       return res.status(400).json({ error: 'Geçersiz isim veya fiyat' });
+
     }
+
+    console.log(JSON.stringify(data, null, 2));
+
 
     const imageUrl = req.file?.path || null;
 
@@ -35,9 +39,9 @@ app.post('/products', upload.single('image'), async (req, res) => {
 
     res.status(201).json(product);
   } catch (error) {
-    console.error('Ürün ekleme hatası:', error); // 👈 Hangi hata geliyor göreceğiz
-    res.status(500).json({ error: 'Sunucu hatası' });
+    console.error("❌ HATA:", JSON.stringify(error, null, 2));
   }
+  
 });
 
 
@@ -63,9 +67,9 @@ app.post('/products', upload.single('image'), async (req, res) => {
 
     res.status(201).json(product);
   } catch (error) {
-    console.error('Ürün ekleme hatası:', error);
-    res.status(500).json({ error: 'Sunucu hatası' });
+    console.error("❌ HATA:", JSON.stringify(error, null, 2));
   }
+  
 });
 
 /* ❌ Ürün Sil */
@@ -75,9 +79,9 @@ app.delete('/products/:id', async (req, res) => {
     await prisma.product.delete({ where: { id } });
     res.status(200).json({ message: 'Ürün silindi' });
   } catch (error) {
-    console.error('Ürün silme hatası:', error);
-    res.status(500).json({ error: 'Silme hatası' });
+    console.error("❌ HATA:", JSON.stringify(error, null, 2));
   }
+  
 });
 
 /* 🛒 Sipariş Listele */
@@ -86,9 +90,9 @@ app.get('/orders', async (req, res) => {
     const orders = await prisma.order.findMany();
     res.json(orders);
   } catch (error) {
-    console.error('Sipariş listeleme hatası:', error);
-    res.status(500).json({ error: 'Sunucu hatası' });
+    console.error("❌ HATA:", JSON.stringify(error, null, 2));
   }
+  
 });
 
 /* ➕ Yeni Sipariş Oluştur */
@@ -108,10 +112,10 @@ app.post('/orders', async (req, res) => {
     });
 
     res.status(201).json(order);
-  } catch (error) {
-    console.error('Sipariş oluşturma hatası:', error);
-    res.status(500).json({ error: 'Sunucu hatası' });
+  }  catch (error) {
+    console.error("❌ HATA:", JSON.stringify(error, null, 2));
   }
+  
 });
 
 /* 🔄 Sipariş Durumu Güncelle */
@@ -125,10 +129,11 @@ app.put('/orders/:id/status', async (req, res) => {
       data: { status },
     });
     res.json(order);
-  } catch (error) {
-    console.error('Sipariş güncelleme hatası:', error);
-    res.status(500).json({ error: 'Güncelleme hatası' });
+  }catch (error) {
+    console.error("❌ HATA:", JSON.stringify(error, null, 2));
   }
+  
+  
 });
 
 /* 📝 Sipariş Detay Getir */

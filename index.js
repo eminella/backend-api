@@ -1,3 +1,23 @@
+const express = require('express');
+const cors = require('cors');
+const multer = require('multer');
+const { PrismaClient } = require('@prisma/client');
+const cloudinary = require('./utils/cloudinary'); // Eğer Cloudinary varsa
+const upload = require('./middleware/upload');     // Multer config
+
+const app = express(); // ← Hatanın çözümü burada
+const prisma = new PrismaClient();
+const PORT = process.env.PORT || 3600;
+
+app.use(cors());
+app.use(express.json());
+
+// ✅ Test route
+app.get('/', (req, res) => {
+  res.send('✅ API çalışıyor');
+});
+
+// ✅ ÜRÜN EKLE
 app.post('/products', upload.single('image'), async (req, res) => {
   try {
     const { name, price } = req.body;
@@ -14,6 +34,9 @@ app.post('/products', upload.single('image'), async (req, res) => {
 
     console.log("✅ Dosya Yüklendi:", req.file);
 
+    // Eğer Cloudinary kullanıyorsan burayı değiştir:
+    // const result = await cloudinary.uploader.upload(req.file.path);
+    // const imageUrl = result.secure_url;
     const imageUrl = req.file.path;
 
     const product = await prisma.product.create({
@@ -27,7 +50,24 @@ app.post('/products', upload.single('image'), async (req, res) => {
     res.status(201).json(product);
   } catch (error) {
     console.error("❌ ÜRÜN EKLEME HATASI:");
-    console.error(error); // ← Objenin tamamı
+    console.error(error);
     res.status(500).json({ error: 'Ürün eklenemedi.' });
   }
+});
+
+// ✅ ÜRÜN LİSTELE
+app.get('/products', async (req, res) => {
+  try {
+    const products = await prisma.product.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json(products);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Ürünler alınamadı' });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server ${PORT} portunda çalışıyor`);
 });

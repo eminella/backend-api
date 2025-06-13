@@ -6,11 +6,12 @@ const storage = new CloudinaryStorage({
   cloudinary,
   params: {
     folder: 'eminella-products',
-    resource_type: 'image',
-    format: async () => 'webp',
+    allowed_formats: ['jpg', 'png', 'jpeg'],
     public_id: (req, file) =>
-      `${Date.now()}-${file.originalname.replace(/\s/g, '_')}`
-  }
+      `${Date.now()}-${file.originalname.replace(/\s/g, '_')}`,
+  },
 });
 
-module.exports = multer({ storage });
+const upload = multer({ storage });
+
+module.exports = upload;

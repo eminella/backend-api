@@ -1,5 +1,11 @@
 const express = require('express');
 const cors = require('cors');
+
+app.use(cors({
+  origin: '*', // veya frontend URL'n tam haliyle: 'https://frontend-app-lbak.onrender.com'
+  credentials: true,
+}));
+
 const { PrismaClient } = require('@prisma/client');
 const upload = require('./middleware/upload'); // Multer config
 

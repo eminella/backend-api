@@ -51,8 +51,8 @@ app.post('/products', upload.single('image'), async (req, res) => {
     res.status(201).json(product);
   } catch (error) {
     console.error("❌ ÜRÜN EKLEME HATASI:");
-    console.error(error);
-    res.status(500).json({ error: 'Ürün eklenemedi.' });
+console.error(JSON.stringify(error, null, 2));
+
   }
 });
 

@@ -13,8 +13,14 @@ const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3600;
 
-app.use(cors());
-app.use(express.json());
+const corsOptions = {
+  origin: 'https://frontend-app-lbak.onrender.com',
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type'],
+};
+
+app.use(cors(corsOptions));
+
 
 // ✅ Test route
 app.get('/', (req, res) => {

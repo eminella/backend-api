@@ -27,6 +27,11 @@ app.get('/', (req, res) => {
   res.send('✅ API çalışıyor');
 });
 
+// ✅ Ana sayfa testi için route — tam buraya ekle
+app.get('/', (req, res) => {
+  res.send('Eminella Backend API aktif ✅');
+});
+
 // ✅ ÜRÜN EKLE
 app.post('/products', upload.single('image'), async (req, res) => {
   try {

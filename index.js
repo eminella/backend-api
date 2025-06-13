@@ -1,11 +1,9 @@
 const express = require('express');
 const cors = require('cors');
-const multer = require('multer');
 const { PrismaClient } = require('@prisma/client');
-const cloudinary = require('./utils/cloudinary'); // Eğer Cloudinary varsa
-const upload = require('./middleware/upload');     // Multer config
+const upload = require('./middleware/upload'); // Multer config
 
-const app = express(); // ← Hatanın çözümü burada
+const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3600;
 
@@ -34,9 +32,6 @@ app.post('/products', upload.single('image'), async (req, res) => {
 
     console.log("✅ Dosya Yüklendi:", req.file);
 
-    // Eğer Cloudinary kullanıyorsan burayı değiştir:
-    // const result = await cloudinary.uploader.upload(req.file.path);
-    // const imageUrl = result.secure_url;
     const imageUrl = req.file.path;
 
     const product = await prisma.product.create({

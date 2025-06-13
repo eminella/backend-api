@@ -57,9 +57,10 @@ app.post('/products', upload.single('image'), async (req, res) => {
     res.status(201).json(product);
   } catch (error) {
     console.error("❌ ÜRÜN EKLEME HATASI:");
-console.error(JSON.stringify(error, null, 2));
-
+    console.error(JSON.stringify(error, null, 2)); // ✅ Objeyi düzgün logla
+    res.status(500).json({ error: 'Ürün eklenemedi.' });
   }
+  
 });
 
 // ✅ ÜRÜN LİSTELE

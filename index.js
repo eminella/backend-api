@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3600;
 app.use(express.json());
 app.use(cors({
   origin: [
-    'https://frontend-app-lbak.onrender.com',
+    'https://frontend-app-opal-delta.vercel.app',
     'https://eminella.com',
     'https://www.eminella.com',
     'http://localhost:3000'

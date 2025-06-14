@@ -13,6 +13,7 @@ app.use(cors({
   origin: [
     'https://frontend-app-lbak.onrender.com',
     'https://eminella.com',
+    'https://www.eminella.com',
     'http://localhost:3000'
   ],
   methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],

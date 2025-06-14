@@ -10,11 +10,16 @@ const PORT = process.env.PORT || 3600;
 // Middleware
 app.use(express.json());
 app.use(cors({
-  origin: 'https://frontend-app-lbak.onrender.com', // Test için '*' yapabilirsin
+  origin: [
+    'https://frontend-app-lbak.onrender.com',
+    'https://eminella.com',
+    'http://localhost:3000'
+  ],
   methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type'],
   credentials: true,
 }));
+
 
 app.use('/uploads', express.static('uploads'));
 

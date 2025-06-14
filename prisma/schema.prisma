@@ -11,11 +11,13 @@ model Product {
   id        Int      @id @default(autoincrement())
   name      String
   price     Float
+  category  String   @default("Genel")
   imageUrl  String?
   createdAt DateTime @default(now())
-
   orders    Order[]  @relation("OrderProducts")
 }
+
+
 
 model Order {
   id           Int        @id @default(autoincrement())

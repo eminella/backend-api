@@ -76,8 +76,11 @@ app.post('/orders', async (req, res) => {
   try {
     const { items, totalAmount } = req.body;
 
-    if (!items || !totalAmount) {
-      return res.status(400).json({ error: 'Eksik sipariş bilgisi' });
+    const amountIsNumber = typeof totalAmount === 'number' && !Number.isNaN(totalAmount);
+    const validItems = Array.isArray(items) && items.length > 0;
+
+    if (!validItems || !amountIsNumber) {
+      return res.status(400).json({ error: 'Eksik veya geçersiz sipariş bilgisi' });
     }
 
     const order = await prisma.order.create({

@@ -2,8 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
 const upload = require('./middleware/upload'); // Multer config (görsel yükleme)
+const path = require('path');
 
-const app = express(); // Kesinlikle en başta olmalı
+const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3600;
 
@@ -20,82 +21,69 @@ app.use(cors({
   allowedHeaders: ['Content-Type'],
   credentials: true,
 }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-
-app.use('/uploads', express.static('uploads'));
-
-// Test route
+// 1) Test route
 app.get('/', (req, res) => {
   res.send('Eminella Backend API aktif ✅');
 });
 
-// Ürün ekleme
+// 2) Tüm ürünleri listeleme
+app.get('/products', async (req, res) => {
+  try {
+    const products = await prisma.product.findMany();
+    return res.json(products);
+  } catch (error) {
+    console.error('❌ GET /products hatası:', error);
+    return res.status(500).json({ error: 'Sunucu hatası' });
+  }
+});
+
+// 3) Yeni ürün ekleme
 app.post('/products', upload.single('image'), async (req, res) => {
   try {
-    const { name, price } = req.body;
+    const { name, price, category } = req.body;
     const parsedPrice = parseFloat(price);
-
-    if (!name || isNaN(parsedPrice)) {
-      return res.status(400).json({ error: 'Geçersiz isim veya fiyat' });
+    if (!name || isNaN(parsedPrice) || !category) {
+      return res.status(400).json({ error: 'Geçersiz isim, fiyat veya kategori' });
     }
-
     if (!req.file || !req.file.path) {
       return res.status(400).json({ error: 'Görsel yüklenemedi' });
     }
 
-    const imageUrl = req.file.path;
-
+    const imageUrl = `/uploads/${path.basename(req.file.path)}`;
     const product = await prisma.product.create({
-      data: {
-        name,
-        price: parsedPrice,
-        imageUrl,
-      },
+      data: { name, price: parsedPrice, category, imageUrl },
     });
-
-    res.status(201).json(product);
+    return res.status(201).json(product);
   } catch (error) {
-    console.error("❌ Ürün ekleme hatası:", error);
-    res.status(500).json({ error: 'Ürün eklenemedi.' });
+    console.error('❌ POST /products hatası:', error);
+    return res.status(500).json({ error: 'Ürün eklenemedi.' });
   }
 });
 
-// Tek bir ürünü id ile getiren rota
+// 4) Tek bir ürünü id ile getiren rota
 app.get('/products/:id', async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (isNaN(id)) {
     return res.status(400).json({ error: 'Geçersiz ürün ID' });
   }
-
   try {
-    const product = await prisma.product.findUnique({
-      where: { id },
-    });
-
+    const product = await prisma.product.findUnique({ where: { id } });
     if (!product) {
       return res.status(404).json({ error: 'Ürün bulunamadı' });
     }
-
     return res.json(product);
   } catch (err) {
-    console.error("🔴 /products/:id hatası:", err);
+    console.error('❌ GET /products/:id hatası:', err);
     return res.status(500).json({ error: 'Sunucu hatası' });
   }
 });
 
-
-// Sipariş oluşturma
+// 5) Sipariş oluşturma
 app.post('/orders', async (req, res) => {
   try {
-    const {
-      customerName,
-      address,
-      phone,
-      items,
-      totalAmount,
-      productIds
-    } = req.body;
-
+    const { customerName, address, phone, items, totalAmount, productIds } = req.body;
     if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
       return res.status(400).json({ error: 'Ürün listesi boş olamaz.' });
     }
@@ -107,59 +95,52 @@ app.post('/orders', async (req, res) => {
         phone,
         items,
         totalAmount,
-        products: {
-          connect: productIds.map(id => ({ id }))
-        }
+        products: { connect: productIds.map(id => ({ id })) }
       },
-      include: {
-        products: true,
-      }
+      include: { products: true }
     });
-
-    res.status(201).json(order);
+    return res.status(201).json(order);
   } catch (error) {
-    console.error('❌ Sipariş oluşturma hatası:', error);
-    res.status(500).json({ error: 'Sipariş oluşturulamadı.' });
+    console.error('❌ POST /orders hatası:', error);
+    return res.status(500).json({ error: 'Sipariş oluşturulamadı.' });
   }
 });
 
-// Siparişleri listele
+// 6) Siparişleri listele
 app.get('/orders', async (req, res) => {
   try {
     const orders = await prisma.order.findMany({
       orderBy: { createdAt: 'desc' },
       include: { products: true }
     });
-    res.json(orders);
+    return res.json(orders);
   } catch (error) {
-    console.error('❌ Siparişler alınamadı:', error);
-    res.status(500).json({ error: 'Sipariş listesi alınamadı.' });
+    console.error('❌ GET /orders hatası:', error);
+    return res.status(500).json({ error: 'Sipariş listesi alınamadı.' });
   }
 });
 
-// Sipariş durumu güncelleme
+// 7) Sipariş durumu güncelleme
 app.patch('/orders/:id/status', async (req, res) => {
-  const { id } = req.params;
+  const id = parseInt(req.params.id, 10);
   const { status } = req.body;
-
-  if (!status) return res.status(400).json({ error: 'Status zorunlu' });
+  if (!status) {
+    return res.status(400).json({ error: 'Status zorunlu' });
+  }
 
   try {
     const updatedOrder = await prisma.order.update({
-      where: { id: parseInt(id) },
+      where: { id },
       data: { status }
     });
-    res.json(updatedOrder);
+    return res.json(updatedOrder);
   } catch (error) {
-    console.error('❌ Sipariş durumu güncellenemedi:', error);
-    res.status(500).json({ error: 'Durum güncelleme başarısız.' });
+    console.error('❌ PATCH /orders/:id/status hatası:', error);
+    return res.status(500).json({ error: 'Durum güncelleme başarısız.' });
   }
 });
 
+// Sunucuyu başlat
 app.listen(PORT, () => {
   console.log(`🚀 Server ${PORT} portunda çalışıyor`);
-});
-
-app.get('/', (req, res) => {
-  res.send('✅ Backend ayakta!');
 });

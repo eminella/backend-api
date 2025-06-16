@@ -60,14 +60,26 @@ app.post('/products', upload.single('image'), async (req, res) => {
   }
 });
 
-// Ürün listele
-app.get('/products', async (req, res) => {
+// Tek bir ürünü id ile getiren rota
+app.get('/products/:id', async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) {
+    return res.status(400).json({ error: 'Geçersiz ürün ID' });
+  }
+
   try {
-    const products = await prisma.product.findMany();
-    res.json(products);
+    const product = await prisma.product.findUnique({
+      where: { id },
+    });
+
+    if (!product) {
+      return res.status(404).json({ error: 'Ürün bulunamadı' });
+    }
+
+    return res.json(product);
   } catch (err) {
-    console.error("🔴 /products hatası:", err);
-    res.status(500).json({ error: 'Sunucu hatası' });
+    console.error("🔴 /products/:id hatası:", err);
+    return res.status(500).json({ error: 'Sunucu hatası' });
   }
 });
 

@@ -6,7 +6,6 @@ const { PrismaClient } = require('@prisma/client');
 const upload = require('./middleware/upload');      // multer config’in
 const authRoutes = require('./routes/auth');
 const orderRoutes = require('./routes/order');      // routes/order.js
-const productRoutes = require('./routes/product');  // istersen ayırabilirsin
 
 const app    = express();
 const prisma = new PrismaClient();

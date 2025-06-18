@@ -36,7 +36,8 @@ app.get('/', (_req, res) => {
   res.send('Eminella Backend API aktif ✅');
 });
 
-/* ---------- PRODUCT ENDPOINTS (opsiyonel ayrı dosya da olabilir) ---------- */
+/* ---------- PRODUCT ENDPOINTS ---------- */
+// 1) Ürün listesi
 app.get('/api/products', async (_req, res) => {
   try {
     const products = await prisma.product.findMany();
@@ -47,6 +48,25 @@ app.get('/api/products', async (_req, res) => {
   }
 });
 
+// 2) Ürün detayı
+app.get('/api/products/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: 'Geçersiz ID' });
+
+    const product = await prisma.product.findUnique({
+      where: { id }
+    });
+    if (!product) return res.status(404).json({ error: 'Ürün bulunamadı' });
+
+    res.json(product);
+  } catch (err) {
+    console.error(`GET /api/products/${req.params.id}:`, err);
+    res.status(500).json({ error: 'Sunucu hatası' });
+  }
+});
+
+// 3) Ürün ekleme (upload destekli)
 app.post('/api/products', upload.single('image'), async (req, res) => {
   try {
     const { name, price, category } = req.body;
@@ -68,7 +88,6 @@ app.post('/api/products', upload.single('image'), async (req, res) => {
 });
 
 /* ---------- ORDER ENDPOINTS ---------- */
-// Tüm SIPAriş işlemlerini /api/orders altında topladık
 app.use('/api/orders', orderRoutes);
 
 /* ---------- SERVER START ---------- */

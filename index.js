@@ -1,12 +1,13 @@
-// backend-api/index.js
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const { PrismaClient } = require('@prisma/client');
 const upload = require('./middleware/upload');      // Multer
-const orderRoutes = require('./routes/routes/order');      // ⬅️ Sipariş rotaları
+const authRoutes = require('./routes/auth');
+const orderRoutes = require('./routes/order');
 
-const app    = express();
+
+const app    = express();   // <-- burada app oluşturulmalı önce
 const prisma = new PrismaClient();
 const PORT   = process.env.PORT || 3600;
 
@@ -29,6 +30,9 @@ app.use(
 );
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Auth rotası app tanımlandıktan sonra kullanılmalı
+app.use('/api/auth', authRoutes);
 
 /* ----------  TEST  ---------- */
 app.get('/', (_req, res) => {

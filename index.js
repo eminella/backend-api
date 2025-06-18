@@ -1,19 +1,19 @@
+// backend-api/index.js
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const { PrismaClient } = require('@prisma/client');
-const upload = require('./middleware/upload');      // Multer
+const upload = require('./middleware/upload');      // multer config’in
 const authRoutes = require('./routes/auth');
-const orderRoutes = require('./routes/order');
+const orderRoutes = require('./routes/order');      // routes/order.js
+const productRoutes = require('./routes/product');  // istersen ayırabilirsin
 
-
-const app    = express();   // <-- burada app oluşturulmalı önce
+const app    = express();
 const prisma = new PrismaClient();
 const PORT   = process.env.PORT || 3600;
 
-/* ----------  MIDDLEWARE  ---------- */
+/* ---------- MIDDLEWARE ---------- */
 app.use(express.json());
-
 app.use(
   cors({
     origin: [
@@ -21,39 +21,34 @@ app.use(
       'https://eminella.com',
       'https://www.eminella.com',
       'http://localhost:3000',
-      'http://localhost:4000',
     ],
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type'],
     credentials: true,
   })
 );
-
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Auth rotası app tanımlandıktan sonra kullanılmalı
+/* ---------- AUTH ---------- */
 app.use('/api/auth', authRoutes);
 
-/* ----------  TEST  ---------- */
+/* ---------- HEALTH CHECK ---------- */
 app.get('/', (_req, res) => {
   res.send('Eminella Backend API aktif ✅');
 });
 
-/* ----------  PRODUCT ENDPOINT’LERİ  ---------- */
-
-// Tüm ürünler
-app.get('/products', async (_req, res) => {
+/* ---------- PRODUCT ENDPOINTS (opsiyonel ayrı dosya da olabilir) ---------- */
+app.get('/api/products', async (_req, res) => {
   try {
     const products = await prisma.product.findMany();
     res.json(products);
   } catch (err) {
-    console.error('GET /products:', err);
+    console.error('GET /api/products:', err);
     res.status(500).json({ error: 'Sunucu hatası' });
   }
 });
 
-// Yeni ürün ekle
-app.post('/products', upload.single('image'), async (req, res) => {
+app.post('/api/products', upload.single('image'), async (req, res) => {
   try {
     const { name, price, category } = req.body;
     const parsedPrice = parseFloat(price);
@@ -68,31 +63,16 @@ app.post('/products', upload.single('image'), async (req, res) => {
     });
     res.status(201).json(product);
   } catch (err) {
-    console.error('POST /products:', err);
+    console.error('POST /api/products:', err);
     res.status(500).json({ error: 'Ürün eklenemedi' });
   }
 });
 
-// ID ile ürün
-app.get('/products/:id', async (req, res) => {
-  const id = Number(req.params.id);
-  if (isNaN(id)) return res.status(400).json({ error: 'Geçersiz ürün ID' });
+/* ---------- ORDER ENDPOINTS ---------- */
+// Tüm SIPAriş işlemlerini /api/orders altında topladık
+app.use('/api/orders', orderRoutes);
 
-  try {
-    const product = await prisma.product.findUnique({ where: { id } });
-    if (!product) return res.status(404).json({ error: 'Ürün bulunamadı' });
-    res.json(product);
-  } catch (err) {
-    console.error('GET /products/:id:', err);
-    res.status(500).json({ error: 'Sunucu hatası' });
-  }
-});
-
-/* ----------  ORDER ENDPOINT’LERİ  ---------- */
-// /orders altında tüm POST–GET–PATCH işlemleri routes/order.js’te
-app.use('/orders', orderRoutes);
-
-/* ----------  SERVER BAŞLAT  ---------- */
+/* ---------- SERVER START ---------- */
 app.listen(PORT, () => {
   console.log(`🚀 Backend ${PORT} portunda çalışıyor`);
 });

@@ -7,8 +7,7 @@ const storage = new CloudinaryStorage({
   params: {
     folder: 'eminella-products',
     allowed_formats: ['jpg', 'png', 'jpeg'],
-    public_id: (req, file) =>
-      `${Date.now()}-${file.originalname.replace(/\s/g, '_')}`,
+    public_id: (req, file) => `${Date.now()}-${file.originalname.replace(/\s/g, '_')}`,
   },
 });
 

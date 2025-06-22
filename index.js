@@ -114,3 +114,13 @@ app.use('/api/orders', orderRoutes);
 app.listen(PORT, () => {
   console.log(`🚀 Backend ${PORT} portunda çalışıyor`);
 });
+
+
+// Global error handler middleware
+app.use((err, req, res, next) => {
+  console.error('🚨 GLOBAL ERROR:', err);
+  res.status(err.status || 500).json({
+    error: err.message || 'Bilinmeyen sunucu hatası',
+    stack: err.stack,  // geliştirme ortamında stack trace görmek için
+  });
+});

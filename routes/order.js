@@ -1,4 +1,3 @@
-// backend-api/routes/order.js
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
@@ -9,7 +8,16 @@ router.get('/', async (_req, res) => {
   try {
     const orders = await prisma.order.findMany({
       orderBy: { createdAt: 'desc' },
-      include: { products: true },  // ürün detaylarını da getir
+      include: {
+        products: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            imageUrl: true, // ✅ ürün görseli de dahil
+          },
+        },
+      },
     });
     res.json(orders);
   } catch (err) {
@@ -33,7 +41,16 @@ router.post('/', async (req, res) => {
           connect: items.map(p => ({ id: p.id })),
         },
       },
-      include: { products: true },
+      include: {
+        products: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            imageUrl: true,
+          },
+        },
+      },
     });
     res.status(201).json(order);
   } catch (err) {
@@ -50,7 +67,16 @@ router.patch('/:id/status', async (req, res) => {
     const order = await prisma.order.update({
       where: { id },
       data: { status },
-      include: { products: true },
+      include: {
+        products: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            imageUrl: true,
+          },
+        },
+      },
     });
     res.json(order);
   } catch (err) {

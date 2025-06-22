@@ -1,25 +1,20 @@
-// backend-api/index.js
+require('dotenv').config();               // .env
 
-require('dotenv').config(); // ✅ .env dosyasını yükle
-
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
+const express       = require('express');
+const cors          = require('cors');
+const path          = require('path');
 const { PrismaClient } = require('@prisma/client');
 
-const uploadMemory = require('./middleware/uploadMemory');  // Multer (MemoryStorage)
-const cloudinary = require('./utils/cloudinary');            // Cloudinary yapılandırması
+const uploadCloudinary = require('./middleware/uploadCloudinary'); // 👈
+const authRoutes    = require('./routes/auth');
+const orderRoutes   = require('./routes/order');
 
-const authRoutes = require('./routes/auth');
-const orderRoutes = require('./routes/order');
-
-const app = express();
+const app    = express();
 const prisma = new PrismaClient();
-const PORT = process.env.PORT || 3600;
+const PORT   = process.env.PORT || 3600;
 
-// Middleware: JSON parse ve CORS izinleri
+// JSON + CORS
 app.use(express.json());
-
 app.use(
   cors({
     origin: [
@@ -34,19 +29,17 @@ app.use(
   })
 );
 
-// Yüklenen dosyalar için static dizin (şu an Cloudinary kullanılıyor ama ek olarak dursun)
+// Statik uploads (gerektiğinde)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Auth ve Sipariş route'ları
-app.use('/api/auth', authRoutes);
+// Routes
+app.use('/api/auth',   authRoutes);
 app.use('/api/orders', orderRoutes);
 
-// Sağlık kontrolü
-app.get('/', (_req, res) => {
-  res.send('Eminella Backend API aktif ✅');
-});
+// Sağlık testi
+app.get('/', (_req, res) => res.send('Eminella Backend API aktif ✅'));
 
-// Ürünleri getir
+// Liste
 app.get('/api/products', async (_req, res) => {
   try {
     const products = await prisma.product.findMany();
@@ -57,7 +50,7 @@ app.get('/api/products', async (_req, res) => {
   }
 });
 
-// Tek ürün detay
+// Detay
 app.get('/api/products/:id', async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -73,55 +66,36 @@ app.get('/api/products/:id', async (req, res) => {
   }
 });
 
-// Yeni ürün ekle (Cloudinary + multer memory)
-app.post('/api/products', uploadMemory.single('image'), async (req, res) => {
+// ➡️ Yeni ürün ekle (CloudinaryStorage ile)
+app.post('/api/products', uploadCloudinary.single('image'), async (req, res) => {
   try {
     const { name, price, category } = req.body;
     const parsedPrice = parseFloat(price);
 
-    if (!name || isNaN(parsedPrice) || !category) {
+    if (!name || isNaN(parsedPrice) || !category)
       return res.status(400).json({ error: 'Geçersiz veri' });
-    }
 
-    if (!req.file) {
+    if (!req.file || !req.file.path)
       return res.status(400).json({ error: 'Görsel yüklenemedi' });
-    }
-
-    // Cloudinary upload helper
-    const streamUpload = (buffer) => {
-      return new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          { folder: 'eminella-products' },
-          (error, result) => {
-            if (result) resolve(result);
-            else reject(error);
-          }
-        );
-        stream.end(buffer);
-      });
-    };
-
-    const result = await streamUpload(req.file.buffer);
 
     const product = await prisma.product.create({
       data: {
         name,
         price: parsedPrice,
         category,
-        imageUrl: result.secure_url,
+        imageUrl: req.file.path,  // Cloudinary URL
       },
     });
 
     res.status(201).json(product);
   } catch (err) {
     console.error('❌ POST /api/products:', err);
-    console.error('🪵 Hata mesajı:', err.message);
     res.status(500).json({ error: err.message || 'Ürün eklenemedi' });
   }
 });
 
-// Global hata yakalayıcı (Render için loglara yansır)
-app.use((err, req, res, next) => {
+// Global error
+app.use((err, _req, res, _next) => {
   console.error('🚨 GLOBAL ERROR:', err);
   res.status(err.status || 500).json({
     error: err.message || 'Bilinmeyen sunucu hatası',
@@ -129,7 +103,4 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Sunucu başlat
-app.listen(PORT, () => {
-  console.log(`🚀 Backend ${PORT} portunda çalışıyor`);
-});
+app.listen(PORT, () => console.log(`🚀 Backend ${PORT} portunda çalışıyor`));

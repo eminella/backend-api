@@ -1,17 +1,19 @@
-// backend-api/index.js
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const { PrismaClient } = require('@prisma/client');
-const upload = require('./middleware/upload');      // multer config’in
+
+// Eski multer config kaldır, yeni ekle:
+const uploadMemory = require('./middleware/uploadMemory');
+const cloudinary = require('./utils/cloudinary');
+
 const authRoutes = require('./routes/auth');
-const orderRoutes = require('./routes/order');      // routes/order.js
+const orderRoutes = require('./routes/order');
 
-const app    = express();
+const app = express();
 const prisma = new PrismaClient();
-const PORT   = process.env.PORT || 3600;
+const PORT = process.env.PORT || 3600;
 
-/* ---------- MIDDLEWARE ---------- */
 app.use(express.json());
 app.use(
   cors({
@@ -28,16 +30,12 @@ app.use(
 );
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-/* ---------- AUTH ---------- */
 app.use('/api/auth', authRoutes);
 
-/* ---------- HEALTH CHECK ---------- */
 app.get('/', (_req, res) => {
   res.send('Eminella Backend API aktif ✅');
 });
 
-/* ---------- PRODUCT ENDPOINTS ---------- */
-// 1) Ürün listesi
 app.get('/api/products', async (_req, res) => {
   try {
     const products = await prisma.product.findMany();
@@ -48,14 +46,13 @@ app.get('/api/products', async (_req, res) => {
   }
 });
 
-// 2) Ürün detayı
 app.get('/api/products/:id', async (req, res) => {
   try {
     const id = Number(req.params.id);
     if (isNaN(id)) return res.status(400).json({ error: 'Geçersiz ID' });
 
     const product = await prisma.product.findUnique({
-      where: { id }
+      where: { id },
     });
     if (!product) return res.status(404).json({ error: 'Ürün bulunamadı' });
 
@@ -66,20 +63,45 @@ app.get('/api/products/:id', async (req, res) => {
   }
 });
 
-// 3) Ürün ekleme (upload destekli)
-app.post('/api/products', upload.single('image'), async (req, res) => {
+// **Cloudinary ile ürün ekleme** (memory multer kullanıyoruz)
+app.post('/api/products', uploadMemory.single('image'), async (req, res) => {
   try {
     const { name, price, category } = req.body;
     const parsedPrice = parseFloat(price);
-    if (!name || isNaN(parsedPrice) || !category)
+    if (!name || isNaN(parsedPrice) || !category) {
       return res.status(400).json({ error: 'Geçersiz veri' });
-    if (!req.file?.path)
+    }
+    if (!req.file) {
       return res.status(400).json({ error: 'Görsel yüklenemedi' });
+    }
 
-    const imageUrl = `/uploads/${path.basename(req.file.path)}`;
-    const product  = await prisma.product.create({
-      data: { name, price: parsedPrice, category, imageUrl },
+    // Cloudinary yükleme fonksiyonu
+    const streamUpload = (buffer) => {
+      return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: 'eminella-products' },
+          (error, result) => {
+            if (result) resolve(result);
+            else reject(error);
+          }
+        );
+        stream.end(buffer);
+      });
+    };
+
+    // Cloudinary'ye yükle
+    const result = await streamUpload(req.file.buffer);
+
+    // Veritabanına kaydet
+    const product = await prisma.product.create({
+      data: {
+        name,
+        price: parsedPrice,
+        category,
+        imageUrl: result.secure_url,
+      },
     });
+
     res.status(201).json(product);
   } catch (err) {
     console.error('POST /api/products:', err);
@@ -87,10 +109,8 @@ app.post('/api/products', upload.single('image'), async (req, res) => {
   }
 });
 
-/* ---------- ORDER ENDPOINTS ---------- */
 app.use('/api/orders', orderRoutes);
 
-/* ---------- SERVER START ---------- */
 app.listen(PORT, () => {
   console.log(`🚀 Backend ${PORT} portunda çalışıyor`);
 });

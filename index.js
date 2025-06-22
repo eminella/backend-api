@@ -39,7 +39,7 @@ app.use('/api/orders', orderRoutes);
 // Sağlık testi
 app.get('/', (_req, res) => res.send('Eminella Backend API aktif ✅'));
 
-// Liste
+// Ürünleri listele
 app.get('/api/products', async (_req, res) => {
   try {
     const products = await prisma.product.findMany();
@@ -50,7 +50,7 @@ app.get('/api/products', async (_req, res) => {
   }
 });
 
-// Detay
+// Ürün detayı getir
 app.get('/api/products/:id', async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -66,7 +66,22 @@ app.get('/api/products/:id', async (req, res) => {
   }
 });
 
-// ➡️ Yeni ürün ekle (CloudinaryStorage ile)
+// ✅ Ürün sil (EKLENDİ)
+app.delete('/api/products/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: 'Geçersiz ID' });
+
+    await prisma.product.delete({ where: { id } });
+
+    res.status(204).end(); // Başarılı ama içerik yok
+  } catch (err) {
+    console.error('❌ DELETE /api/products/:id:', err);
+    res.status(500).json({ error: 'Ürün silinemedi' });
+  }
+});
+
+// Ürün oluştur (görselli)
 app.post('/api/products', uploadCloudinary.single('image'), async (req, res) => {
   try {
     const { name, price, category } = req.body;
@@ -94,7 +109,7 @@ app.post('/api/products', uploadCloudinary.single('image'), async (req, res) => 
   }
 });
 
-// Global error
+// Global error handler
 app.use((err, _req, res, _next) => {
   console.error('🚨 GLOBAL ERROR:', err);
   res.status(err.status || 500).json({

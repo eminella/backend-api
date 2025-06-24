@@ -1,29 +1,40 @@
 const express = require('express');
 const multer = require('multer');
-const path = require('path');
 const { PrismaClient } = require('@prisma/client');
+const { v2: cloudinary } = require('cloudinary');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 const prisma = new PrismaClient();
 const router = express.Router();
 
-// Görselin kaydedileceği yer
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // klasör adı
+// Cloudinary ayarları
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Multer Cloudinary storage (çoklu dosya)
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'eminella-products', // Cloudinary klasör adı
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
   },
-  filename: (req, file, cb) => {
-    const uniqueName = `${Date.now()}-${file.originalname}`;
-    cb(null, uniqueName);
-  }
 });
 
 const upload = multer({ storage });
 
-// 📌 [POST] Yeni ürün ekleme (çoklu görsel destekli)
+// 📌 [POST] Yeni ürün ekleme (çoklu görsel Cloudinary destekli)
 router.post('/', upload.array('images', 3), async (req, res) => {
   try {
     const { name, price, category } = req.body;
-    const imageUrls = req.files.map(file => `/uploads/${file.filename}`);
+
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'Görsel yüklenmedi' });
+    }
+
+    const imageUrls = req.files.map(file => file.path); // Cloudinary linki
 
     const product = await prisma.product.create({
       data: {
@@ -37,7 +48,7 @@ router.post('/', upload.array('images', 3), async (req, res) => {
     res.status(201).json(product);
   } catch (err) {
     console.error('POST /api/products:', err);
-    res.status(500).json({ error: 'Ürün eklenirken hata oluştu' });
+    res.status(500).json({ error: err.message });
   }
 });
 

@@ -1,10 +1,47 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 const router = express.Router();
 
-// Ürün listesi
+// Görselin kaydedileceği yer
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/'); // klasör adı
+  },
+  filename: (req, file, cb) => {
+    const uniqueName = `${Date.now()}-${file.originalname}`;
+    cb(null, uniqueName);
+  }
+});
+
+const upload = multer({ storage });
+
+// 📌 [POST] Yeni ürün ekleme (çoklu görsel destekli)
+router.post('/', upload.array('images', 3), async (req, res) => {
+  try {
+    const { name, price, category } = req.body;
+    const imageUrls = req.files.map(file => `/uploads/${file.filename}`);
+
+    const product = await prisma.product.create({
+      data: {
+        name,
+        price: parseFloat(price),
+        category,
+        imageUrls,
+      },
+    });
+
+    res.status(201).json(product);
+  } catch (err) {
+    console.error('POST /api/products:', err);
+    res.status(500).json({ error: 'Ürün eklenirken hata oluştu' });
+  }
+});
+
+// 📌 [GET] Ürün listesi
 router.get('/', async (_req, res) => {
   try {
     const products = await prisma.product.findMany();
@@ -15,7 +52,7 @@ router.get('/', async (_req, res) => {
   }
 });
 
-// Ürün detayı
+// 📌 [GET] Ürün detayı
 router.get('/:id', async (req, res) => {
   try {
     const id = Number(req.params.id);

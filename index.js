@@ -1,4 +1,3 @@
-// backend-api/app.js (veya ana backend dosyan)
 require('dotenv').config();
 
 const express = require('express');
@@ -67,8 +66,8 @@ app.get('/api/products/:id', async (req, res) => {
   }
 });
 
-// Ürün oluştur (görselli)
-app.post('/api/products', uploadCloudinary.single('image'), async (req, res) => {
+// Ürün oluştur (çoklu görsel yükleme destekli)
+app.post('/api/products', uploadCloudinary.array('images', 3), async (req, res) => {
   try {
     const { name, price, category, description } = req.body;
     const parsedPrice = parseFloat(price);
@@ -76,7 +75,7 @@ app.post('/api/products', uploadCloudinary.single('image'), async (req, res) => 
     if (!name || isNaN(parsedPrice) || !category)
       return res.status(400).json({ error: 'Geçersiz veri' });
 
-    if (!req.file || !req.file.path)
+    if (!req.files || req.files.length === 0)
       return res.status(400).json({ error: 'Görsel yüklenemedi' });
 
     const imageUrls = req.files.map(file => file.path);
@@ -86,11 +85,10 @@ app.post('/api/products', uploadCloudinary.single('image'), async (req, res) => 
         name,
         price: parsedPrice,
         category,
-        description,               // Açıklama alanı eklendi
-        imageUrls,                 // Çoklu görsel dizisi
+        description,
+        imageUrls,
       },
     });
-    
 
     res.status(201).json(product);
   } catch (err) {

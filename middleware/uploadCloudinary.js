@@ -13,7 +13,10 @@ const storage = new CloudinaryStorage({
 });
 
 // 10 MB limit (Render proxy’nin kopmaması için)
-module.exports = multer({
+// Multer yapılandırmasını aynen koruyoruz
+const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 },
 });
+
+module.exports = upload;

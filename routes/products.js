@@ -14,7 +14,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Cloudinary storage
+// Cloudinary storage tanımı
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
@@ -23,27 +23,21 @@ const storage = new CloudinaryStorage({
   },
 });
 
+// Multer middleware
 const upload = multer({ storage });
 
-// 🔍 ——— 1) Burada aktif storage tipini yazdırıyoruz ———
-console.log('✅ aktif storage tipi:', storage.constructor.name);
-
-// ************************************
-// ***********  ROUTES  ***************
-// ************************************
-
-// [POST] Yeni ürün ekleme
+// POST - Yeni ürün ekleme, max 3 resim
 router.post('/', upload.array('images', 3), async (req, res) => {
   try {
-    // 🔍 ——— 2) Yüklenen dosyaları logla ———
     console.log('📦 Gelen dosyalar:', req.files);
 
     const { name, price, category } = req.body;
+
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: 'Görsel yüklenmedi' });
     }
 
-    const imageUrls = req.files.map((file) => file.path); // Cloudinary linkleri
+    const imageUrls = req.files.map(file => file.path); // Cloudinary linkleri
 
     const product = await prisma.product.create({
       data: {
@@ -60,7 +54,5 @@ router.post('/', upload.array('images', 3), async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 });
-
-// ... (GET yolları değişmedi)
 
 module.exports = router;

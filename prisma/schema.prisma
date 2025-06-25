@@ -8,13 +8,14 @@ datasource db {
 }
 
 model Product {
-  id        Int      @id @default(autoincrement())
-  name      String
-  price     Float
-  category  String   @default("Genel")
-  imageUrls String[] // 🔄 çoklu görsel alanı (dizi)
-  createdAt DateTime @default(now())
-  orders    Order[]  @relation("OrderProducts")
+  id          Int      @id @default(autoincrement())
+  name        String
+  price       Float
+  category    String   @default("Genel")
+  imageUrls   String[] // 🔄 çoklu görsel alanı (dizi)
+  createdAt   DateTime @default(now())
+  orders      Order[]  @relation("OrderProducts")
+  description String?  // opsiyonel açıklama alanı eklendi
 }
 
 model Order {

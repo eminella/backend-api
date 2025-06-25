@@ -14,7 +14,7 @@ router.get('/', async (_req, res) => {
             id: true,
             name: true,
             price: true,
-            imageUrl: true, // ✅ ürün görseli de dahil
+            imageUrls: true,  // Burada imageUrls dizisi
           },
         },
       },
@@ -47,7 +47,7 @@ router.post('/', async (req, res) => {
             id: true,
             name: true,
             price: true,
-            imageUrl: true,
+            imageUrls: true,  // Burada da imageUrls dizisi
           },
         },
       },
@@ -73,7 +73,7 @@ router.patch('/:id/status', async (req, res) => {
             id: true,
             name: true,
             price: true,
-            imageUrl: true,
+            imageUrls: true,  // Burada da imageUrls dizisi
           },
         },
       },

@@ -79,15 +79,18 @@ app.post('/api/products', uploadCloudinary.single('image'), async (req, res) => 
     if (!req.file || !req.file.path)
       return res.status(400).json({ error: 'Görsel yüklenemedi' });
 
+    const imageUrls = req.files.map(file => file.path);
+
     const product = await prisma.product.create({
       data: {
         name,
         price: parsedPrice,
         category,
         description,               // Açıklama alanı eklendi
-        imageUrls: [req.file.path] // Tek görsel dizi içinde kaydediliyor
+        imageUrls,                 // Çoklu görsel dizisi
       },
     });
+    
 
     res.status(201).json(product);
   } catch (err) {

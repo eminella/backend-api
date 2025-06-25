@@ -7,14 +7,14 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const prisma = new PrismaClient();
 const router = express.Router();
 
-// Cloudinary ayarları
+// Cloudinary yapılandırması
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Cloudinary storage tanımı
+// Cloudinary için storage tanımı
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
@@ -23,27 +23,34 @@ const storage = new CloudinaryStorage({
   },
 });
 
-// Multer middleware
+// Multer middleware (upload)
 const upload = multer({ storage });
 
-// POST - Yeni ürün ekleme, max 3 resim
+// POST /api/products - Çoklu görsel yükleyerek ürün ekle
 router.post('/', upload.array('images', 3), async (req, res) => {
   try {
+    // Yüklenen dosyaları logla
     console.log('📦 Gelen dosyalar:', req.files);
 
-    const { name, price, category } = req.body;
+    const { name, price, category, description } = req.body;
 
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: 'Görsel yüklenmedi' });
     }
 
-    const imageUrls = req.files.map(file => file.path); // Cloudinary linkleri
+    if (!name || !price || !category) {
+      return res.status(400).json({ error: 'Eksik ürün bilgisi' });
+    }
+
+    // Cloudinary'den dönen URL'ler
+    const imageUrls = req.files.map(file => file.path);
 
     const product = await prisma.product.create({
       data: {
         name,
         price: parseFloat(price),
         category,
+        description: description || null,
         imageUrls,
       },
     });
@@ -51,7 +58,7 @@ router.post('/', upload.array('images', 3), async (req, res) => {
     return res.status(201).json(product);
   } catch (err) {
     console.error('POST /api/products:', err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message || 'Sunucu hatası' });
   }
 });
 

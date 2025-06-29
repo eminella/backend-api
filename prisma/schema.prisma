@@ -12,10 +12,10 @@ model Product {
   name        String
   price       Float
   category    String   @default("Genel")
-  imageUrls   String[] 
+  imageUrls   String[]
   createdAt   DateTime @default(now())
   orders      Order[]  @relation("OrderProducts")
-  description String?  
+  description String?
 
   rating      Float?   @default(0)
   reviewCount Int?     @default(0)
@@ -39,5 +39,12 @@ model User {
   email     String   @unique
   password  String
   name      String
+  createdAt DateTime @default(now())
+}
+
+model Banner {
+  id        Int      @id @default(autoincrement())
+  title     String?
+  imageUrl  String
   createdAt DateTime @default(now())
 }

@@ -5,15 +5,16 @@ const cors = require('cors');
 const path = require('path');
 const { PrismaClient } = require('@prisma/client');
 
-const uploadCloudinary = require('./middleware/uploadCloudinary'); // Görsel yükleme middleware
+const uploadCloudinary = require('./middleware/uploadCloudinary');
 const authRoutes = require('./routes/auth');
 const orderRoutes = require('./routes/order');
+const adminRoutes = require('./routes/admin'); // ✅ admin route
 
 const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3600;
 
-// JSON + CORS
+// Middleware
 app.use(express.json());
 app.use(
   cors({
@@ -29,17 +30,17 @@ app.use(
   })
 );
 
-// Statik uploads (gerektiğinde)
+// Statik dosya
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Routes
+// Route'lar
 app.use('/api/auth', authRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/admin', adminRoutes); // ✅ admin giriş endpointi
 
-// Sağlık testi
+// Test & Ürün İşlemleri
 app.get('/', (_req, res) => res.send('Eminella Backend API aktif ✅'));
 
-// Ürünleri listele
 app.get('/api/products', async (_req, res) => {
   try {
     const products = await prisma.product.findMany();
@@ -50,7 +51,6 @@ app.get('/api/products', async (_req, res) => {
   }
 });
 
-// Ürün detayı getir
 app.get('/api/products/:id', async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -66,7 +66,6 @@ app.get('/api/products/:id', async (req, res) => {
   }
 });
 
-// Ürün oluştur (çoklu görsel yükleme destekli)
 app.post('/api/products', uploadCloudinary.array('images', 3), async (req, res) => {
   try {
     const { name, price, category, description } = req.body;
@@ -97,14 +96,12 @@ app.post('/api/products', uploadCloudinary.array('images', 3), async (req, res) 
   }
 });
 
-// Ürün sil (isteğe bağlı)
 app.delete('/api/products/:id', async (req, res) => {
   try {
     const id = Number(req.params.id);
     if (isNaN(id)) return res.status(400).json({ error: 'Geçersiz ID' });
 
     await prisma.product.delete({ where: { id } });
-
     res.status(204).end();
   } catch (err) {
     console.error('❌ DELETE /api/products/:id:', err);
@@ -112,7 +109,7 @@ app.delete('/api/products/:id', async (req, res) => {
   }
 });
 
-// Global error handler
+// Global hata
 app.use((err, _req, res, _next) => {
   console.error('🚨 GLOBAL ERROR:', err);
   res.status(err.status || 500).json({
